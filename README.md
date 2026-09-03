@@ -12,8 +12,7 @@ only at runtime. No cloud, no model API.
 
 **[Website](https://shinegang.click)** ·
 **[Plans & pricing](https://shinegang.click/console.html#buy)** ·
-[Integrations](integrations/README-integrations.md) ·
-[Русский](README.ru.md)
+[Integrations](integrations/README-integrations.md)
 
 ## Quick start
 
