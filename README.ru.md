@@ -1,9 +1,79 @@
 # Шина/память ShineMnemos — первый кирпич
 
-> **Клиентам — [README.en.md](README.en.md)** (EN): «You get the tools — your graph starts
-> empty. Grounded answers are ON by default.» Приказ Ильи 03.09: клиентская инстанция
-> стартует с ЧИСТЫМ графом (`--store blank`), проход через граф обязателен по умолчанию
-> (`ground_by_default`). Наш боевой стор — только внутренний, в дистрибутив не едет.
+**Инструменты — вам, граф стартует пустым. Grounded-ответы включены по умолчанию.**
+
+ShineMnemos — локальный MCP-сервер памяти, который делает память агента
+принудительной: каждый ответ проходит через ваш граф знаний и получает вердикт
+`grounded / partial / ungrounded` плюс список выдуманных предложений. Если
+ответ уже есть в графе — он отдаётся как есть, LLM не вызывается. Свежая
+инстанция стартует с чистым графом: продаём инструменты, а не данные.
+Python 3.12, в рантайме только stdlib, без облака и без API моделей.
+
+**[Сайт](https://shinegang.click)** ·
+**[Тарифы и покупка](https://shinegang.click/console.html#buy)** ·
+[Интеграции](integrations/README-integrations.md) ·
+[English](README.md)
+
+## Быстрый старт
+
+```bash
+git clone https://github.com/shinegang/shinemnemos.git && cd shinemnemos
+python3 -m mnemos --host 127.0.0.1 --port 8765 --store blank   # 1. сервер
+python3 bridge/mnemos_bridge.py --selftest                     # 2. мост (без модели)
+bash integrations/claude_code_add.sh                           # 3. клиент (Claude Code)
+```
+
+Конфиги Claude Desktop / Cursor / llama.cpp / LangChain — в
+[integrations/](integrations/README-integrations.md).
+
+## Почему ShineMnemos
+
+Каждый тезис проверяется по файлу и строке этого репозитория.
+
+- **Grounded по умолчанию** — `memory_ground` без предшествующего
+  `memory_ground_prepare` даёт вердикт `ungrounded` (`no_pre_pass`):
+  [mnemos/grounding.py:527](mnemos/grounding.py#L527); политика включена по
+  умолчанию: [mnemos/server.py:102](mnemos/server.py#L102).
+- **Graph-first** — `memory_answer` отвечает прямо из графа (ноль токенов
+  генерации) либо `llm_required: true` с готовым grounded-промптом:
+  [mnemos/server.py:1267](mnemos/server.py#L1267).
+- **Инструменты, а не данные** — шаблон
+  [mnemos/data/nodes.blank.json](mnemos/data/nodes.blank.json) = `{}`; `blank`
+  не перезаписывает существующий граф
+  ([mnemos/store.py:240](mnemos/store.py#L240)), непустой шаблон = отказ старта
+  ([mnemos/store.py:170](mnemos/store.py#L170)).
+- **Аудит** — append-only журнал `ground_log.jsonl` рядом со стором
+  ([mnemos/grounding.py:736](mnemos/grounding.py#L736)), чтение —
+  `memory_ground_log` ([mnemos/server.py:1302](mnemos/server.py#L1302)).
+- **Truth-check** — протокол П1–П6, `pass` при ≥ 4 из 6
+  ([mnemos/truth_gate.py:29](mnemos/truth_gate.py#L29),
+  [mnemos/truth_gate.py:215](mnemos/truth_gate.py#L215)).
+- **Локально и без зависимостей** — JSON-RPC на stdlib `http.server`
+  ([mnemos/server.py:40](mnemos/server.py#L40)), в рантайме ноль сторонних
+  пакетов ([requirements.txt](requirements.txt)); опциональные `fastembed` и
+  tree-sitter под гардами, не обязательны.
+- **Проверяемость** — `python -m pytest tests -q` (наш прогон: 352 passed,
+  62 skipped; скипы — отсутствующие опциональные зависимости, гейты приватного
+  корпуса тоже скипаются чисто), `python demo_gates.py` — пять гейтов качества
+  целиком на stdlib. Харнесы замеров тоже в репо
+  ([eval_grounding.py](eval_grounding.py), [eval_recall.py](eval_recall.py)) —
+  они читают граф из `data/nodes.json` (в репо он пуст) и ground truth
+  (`--gt`): положите свои.
+
+## Купить план
+
+Движок в этом репо — Apache-2.0, работает полностью локально и бесплатно.
+Планы на сайте добавляют лимиты повыше (агенты, узлы, операции, срок журнала)
+и дополнительные гарды: шесть тарифов (Free, Solo, Pro, Team, Scale,
+Enterprise) от $0 до $499/мес, Enterprise — по договорённости. Оплата —
+x402-челлендж, USDC в сети Base. Сайт: **[shinegang.click](https://shinegang.click)**,
+покупка: **[shinegang.click/console.html#buy](https://shinegang.click/console.html#buy)**.
+
+---
+
+> Клиентская инстанция стартует с ЧИСТЫМ графом (`--store blank`), проход через
+> граф обязателен по умолчанию (`ground_by_default`). Наш боевой стор — только
+> внутренний, в дистрибутив не едет. Клиентам — [README.md](README.md) (EN).
 
 Проект «память, дающая агенту путь к сознанию» (см. `D:\deepseek harness\memory_project.md`).
 Этот репозиторий — первый кирпич по роадмапу RECON_PRODUCTS: **локальный MCP memory server
@@ -26,7 +96,7 @@ D:\mnemos\
     server.py      — MCP-сервер-скелет: JSON-RPC 2.0 на stdlib http.server
                      (initialize, tools/list, tools/call: memory_add/verify/search)
     __main__.py    — запуск: py -3.12 -m mnemos
-  tests\           — 68 pytest-тестов (все зелёные)
+  tests\           — pytest-тесты (наш прогон в публичном репо: 352 passed, 62 skipped)
 ```
 
 ## Модель узла (JSON)
@@ -114,7 +184,7 @@ fallback-скан с самолечением, точность всегда 100
 - Отключение: `Store(path, use_hash_index=False)` или
   `search(q, use_hash_index=False)` — старое поведение.
 - Полная пересборка индекса после ручной правки: `store.reindex()`.
-- Бенчмарк и цифры: `bench_hash_index.py` + `bench_hash_index_report.md`.
+- Бенчмарк и цифры — во внутреннем репо, в публичный дистрибутив не входят.
 
 ## Режимы поиска (`memory_search`)
 
@@ -130,8 +200,9 @@ fallback-скан с самолечением, точность всегда 100
 `token_fallback`) или `budget`; `rrf` на NL хуже (0.8167 против 0.8667), поэтому туда он
 не роутится.
 
-Замер воспроизводится: `python3 eval_recall.py` (боевой стор только копируется, sha256
-сверяется до и после). Подробности и что из ML-BOOST сознательно НЕ внедрено — в `REPORT.md`.
+Замер: `python3 eval_recall.py` на нашем боевом сторе и ground truth — они приватны и в
+публичное репо не входят (запускайте на своём графе; стор только копируется, sha256
+сверяется до и после).
 
 ## Лексический слой (`mnemos/mlsearch.py`, ML-BOOST 03.09)
 
@@ -218,7 +289,9 @@ threshold blocked it. Two answers that fit equally well is not a hit: choosing
 between them is the model's job, not a threshold's.
 
 Measured on the 15-query ground-truth set (`python3 eval_grounding.py`, prod
-store copied, sha256 verified before/after):
+store copied, sha256 verified before/after; the prod store and ground-truth
+file are private and not shipped in this repo — run the harness on your own
+graph):
 
 | scenario | fires | wrong node returned | tokens saved (lower bound) |
 |---|---|---|---|
@@ -279,14 +352,14 @@ with `blank`, run with the plain path afterwards.
 If the template is ever found non-empty, start-up fails loudly: that is our leak
 detector for someone else's nodes riding along in a release.
 
-Client-facing page: [README.en.md](README.en.md).
+Client-facing page: [README.md](README.md).
 
 ## Запуск
 
 ```powershell
 # тесты (нужен pytest: py -3.12 -m pip install pytest)
 cd D:\mnemos
-py -3.12 -m pytest -q            # 424 passed, 1 skipped (03.09)
+py -3.12 -m pytest -q            # публичное репо, наш прогон: 352 passed, 62 skipped (03.09)
 
 # замер обязательного прохода через граф (боевой стор только копируется)
 py -3.12 eval_grounding.py
