@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "shinemnemos": {
+      "command": "python3.12",
+      "args": ["/ABSOLUTE/PATH/TO/shinemnemos/bridge/mnemos_bridge.py"],
+      "env": {
+        "MNEMOS_URL": "http://127.0.0.1:8765/"
+      }
+    }
+  }
+}

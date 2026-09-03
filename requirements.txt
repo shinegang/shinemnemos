@@ -1,0 +1,4 @@
+# ShineMnemos: рантайм — ноль зависимостей (только stdlib).
+# Dev-зависимость для тестов (уже установлена в системный python 3.12):
+#   py -3.12 -m pip install pytest
+pytest
