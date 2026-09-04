@@ -2,6 +2,8 @@
 
 **You get the tools — your graph starts empty. Grounded answers are ON by default.**
 
+[![GitHub stars](https://img.shields.io/github/stars/shinegang/shinemnemos?style=flat)](https://github.com/shinegang/shinemnemos) [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+
 ShineMnemos is a local MCP memory server that makes an agent's memory
 *enforceable*: every answer passes through your knowledge graph and comes back
 with a verdict — `grounded`, `partial` or `ungrounded` — plus the exact
@@ -194,6 +196,8 @@ node store ships inside the package
 ([tests/test_ground_default.py:195](tests/test_ground_default.py#L195)).
 
 ## Get a plan
+
+**First 1,000 accounts: any payment above 0.005 USDC unlocks Pro for 30 days, once per account.** Live counter: `GET /api/promo/status`. Pay-per-call from 0.0035 USDC/op (intro, −30%).
 
 The engine in this repo is Apache-2.0 and runs entirely on your machine — free.
 Plans on the site add higher limits (agents, nodes, operations, journal
